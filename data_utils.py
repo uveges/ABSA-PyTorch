@@ -8,7 +8,8 @@ import pickle
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from transformers import BertTokenizer
+from transformers import BertTokenizer, AutoTokenizer, AutoModel
+
 
 
 def build_tokenizer(fnames, max_seq_len, dat_fname):
@@ -108,10 +109,12 @@ class Tokenizer(object):
             sequence = sequence[::-1]
         return pad_and_truncate(sequence, self.max_seq_len, padding=padding, truncating=truncating)
 
-
+#tokenizert írom felül azzal a model tokenizerrel amit szeretnék használni
+# self.tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+# self.tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-uncased')
 class Tokenizer4Bert:
     def __init__(self, max_seq_len, pretrained_bert_name):
-        self.tokenizer = BertTokenizer.from_pretrained(pretrained_bert_name)
+        self.tokenizer = AutoTokenizer.from_pretrained("SZTAKI-HLT/hubert-base-cc")
         self.max_seq_len = max_seq_len
 
     def text_to_sequence(self, text, reverse=False, padding='post', truncating='post'):
