@@ -20,9 +20,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 
-from data_utils import build_tokenizer, build_embedding_matrix, Tokenizer4Bert, ABSADataset
-from models import LSTM, IAN, MemNet, RAM, TD_LSTM, TC_LSTM, Cabasc, ATAE_LSTM, TNet_LF, AOA, MGAN, ASGCN, LCF_BERT
-from models.aen import CrossEntropyLoss_LSR, AEN_BERT
+from data_utils import build_tokenizer, Tokenizer4Bert, ABSADataset
 from models.bert_spc import BERT_SPC
 
 logger = logging.getLogger()
@@ -33,21 +31,21 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 class Instructor:
     def __init__(self, opt):
         self.opt = opt
-# bert-nek adom meg a modelt amit szeretnék használni, jelen esetben a hubertet
-        if 'bert' in opt.model_name:
-            tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
-            bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-            self.model = opt.model_class(bert, opt).to(opt.device)
-        else:
-            tokenizer = build_tokenizer(
-                fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
-                max_seq_len=opt.max_seq_len,
-                dat_fname='{0}_tokenizer.dat'.format(opt.dataset))
-            embedding_matrix = build_embedding_matrix(
-                word2idx=tokenizer.word2idx,
-                embed_dim=opt.embed_dim,
-                dat_fname='{0}_{1}_embedding_matrix.dat'.format(str(opt.embed_dim), opt.dataset))
-            self.model = opt.model_class(embedding_matrix, opt).to(opt.device)
+        # bert-nek adom meg a modelt amit szeretnék használni, jelen esetben a hubertet
+        # if 'bert' in opt.model_name:
+        tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
+        bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+        self.model = opt.model_class(bert, opt).to(opt.device)
+        # else:
+        #     tokenizer = build_tokenizer(
+        #         fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
+        #         max_seq_len=opt.max_seq_len,
+        #         dat_fname='{0}_tokenizer.dat'.format(opt.dataset))
+        #     embedding_matrix = build_embedding_matrix(
+        #         word2idx=tokenizer.word2idx,
+        #         embed_dim=opt.embed_dim,
+        #         dat_fname='{0}_{1}_embedding_matrix.dat'.format(str(opt.embed_dim), opt.dataset))
+        #     self.model = opt.model_class(embedding_matrix, opt).to(opt.device)
 
         self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
         self.testset = ABSADataset(opt.dataset_file['test'], tokenizer)
@@ -221,39 +219,12 @@ def main():
         os.environ['PYTHONHASHSEED'] = str(opt.seed)
 
     model_classes = {
-        'lstm': LSTM,
-        'td_lstm': TD_LSTM,
-        'tc_lstm': TC_LSTM,
-        'atae_lstm': ATAE_LSTM,
-        'ian': IAN,
-        'memnet': MemNet,
-        'ram': RAM,
-        'cabasc': Cabasc,
-        'tnet_lf': TNet_LF,
-        'aoa': AOA,
-        'mgan': MGAN,
-        'asgcn': ASGCN,
-        'bert_spc': BERT_SPC,
-        'aen_bert': AEN_BERT,
-        'lcf_bert': LCF_BERT,
-        # default hyper-parameters for LCF-BERT model is as follws:
-        # lr: 2e-5
-        # l2: 1e-5
-        # batch size: 16
-        # num epochs: 5
+        'bert_spc': BERT_SPC
     }
     dataset_files = {
-        'twitter': {
-            'train': './datasets/acl-14-short-data/train.raw',
-            'test': './datasets/acl-14-short-data/test.raw'
-        },
-        'restaurant': {
-            'train': './datasets/semeval14/Restaurants_Train.xml.seg',
-            'test': './datasets/semeval14/Restaurants_Test_Gold.xml.seg'
-        },
         'opinhubank': {
-            'train': './datasets/semeval14/OpinHuBank_Train.txt',
-            'test': './datasets/semeval14/OpinHuBank_Test.txt'
+            'train': './datasets/OpinHuBank_Train.txt',
+            'test': './datasets/OpinHuBank_Test.txt'
         }
     }
     input_colses = {

@@ -5,11 +5,10 @@
 
 import os
 import pickle
-import numpy as np
-import torch
-from torch.utils.data import Dataset
-from transformers import BertTokenizer, AutoTokenizer, AutoModel
 
+import numpy as np
+from torch.utils.data import Dataset
+from transformers import AutoTokenizer
 
 
 def build_tokenizer(fnames, max_seq_len, dat_fname):
@@ -34,35 +33,35 @@ def build_tokenizer(fnames, max_seq_len, dat_fname):
     return tokenizer
 
 
-def _load_word_vec(path, word2idx=None, embed_dim=300):
-    fin = open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
-    word_vec = {}
-    for line in fin:
-        tokens = line.rstrip().split()
-        word, vec = ' '.join(tokens[:-embed_dim]), tokens[-embed_dim:]
-        if word in word2idx.keys():
-            word_vec[word] = np.asarray(vec, dtype='float32')
-    return word_vec
+# def _load_word_vec(path, word2idx=None, embed_dim=300):
+#     fin = open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
+#     word_vec = {}
+#     for line in fin:
+#         tokens = line.rstrip().split()
+#         word, vec = ' '.join(tokens[:-embed_dim]), tokens[-embed_dim:]
+#         if word in word2idx.keys():
+#             word_vec[word] = np.asarray(vec, dtype='float32')
+#     return word_vec
 
 
-def build_embedding_matrix(word2idx, embed_dim, dat_fname):
-    if os.path.exists(dat_fname):
-        print('loading embedding_matrix:', dat_fname)
-        embedding_matrix = pickle.load(open(dat_fname, 'rb'))
-    else:
-        print('loading word vectors...')
-        embedding_matrix = np.zeros((len(word2idx) + 2, embed_dim))  # idx 0 and len(word2idx)+1 are all-zeros
-        fname = './glove.twitter.27B/glove.twitter.27B.' + str(embed_dim) + 'd.txt' \
-            if embed_dim != 300 else './glove.42B.300d.txt'
-        word_vec = _load_word_vec(fname, word2idx=word2idx, embed_dim=embed_dim)
-        print('building embedding_matrix:', dat_fname)
-        for word, i in word2idx.items():
-            vec = word_vec.get(word)
-            if vec is not None:
-                # words not found in embedding index will be all-zeros.
-                embedding_matrix[i] = vec
-        pickle.dump(embedding_matrix, open(dat_fname, 'wb'))
-    return embedding_matrix
+# def build_embedding_matrix(word2idx, embed_dim, dat_fname):
+#     if os.path.exists(dat_fname):
+#         print('loading embedding_matrix:', dat_fname)
+#         embedding_matrix = pickle.load(open(dat_fname, 'rb'))
+#     else:
+#         print('loading word vectors...')
+#         embedding_matrix = np.zeros((len(word2idx) + 2, embed_dim))  # idx 0 and len(word2idx)+1 are all-zeros
+#         fname = './glove.twitter.27B/glove.twitter.27B.' + str(embed_dim) + 'd.txt' \
+#             if embed_dim != 300 else './glove.42B.300d.txt'
+#         word_vec = _load_word_vec(fname, word2idx=word2idx, embed_dim=embed_dim)
+#         print('building embedding_matrix:', dat_fname)
+#         for word, i in word2idx.items():
+#             vec = word_vec.get(word)
+#             if vec is not None:
+#                 # words not found in embedding index will be all-zeros.
+#                 embedding_matrix[i] = vec
+#         pickle.dump(embedding_matrix, open(dat_fname, 'wb'))
+#     return embedding_matrix
 
 
 def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
@@ -131,9 +130,6 @@ class ABSADataset(Dataset):
         fin = open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
         lines = fin.readlines()
         fin.close()
-        fin = open(fname+'.graph', 'rb')
-        idx2graph = pickle.load(fin)
-        fin.close()
 
         all_data = []
         for i in range(0, len(lines), 3):
@@ -161,8 +157,6 @@ class ABSADataset(Dataset):
             text_bert_indices = tokenizer.text_to_sequence("[CLS] " + text_left + " " + aspect + " " + text_right + " [SEP]")
             aspect_bert_indices = tokenizer.text_to_sequence("[CLS] " + aspect + " [SEP]")
 
-            # dependency_graph = np.pad(idx2graph[i], ((0,tokenizer.max_seq_len-idx2graph[i].shape[0]),(0,tokenizer.max_seq_len-idx2graph[i].shape[0])), 'constant')
-
             data = {
                 'concat_bert_indices': concat_bert_indices,
                 'concat_segments_indices': concat_segments_indices,
@@ -176,7 +170,6 @@ class ABSADataset(Dataset):
                 'right_with_aspect_indices': right_with_aspect_indices,
                 'aspect_indices': aspect_indices,
                 'aspect_boundary': aspect_boundary,
-                # 'dependency_graph': dependency_graph,
                 'polarity': polarity,
             }
 
