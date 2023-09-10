@@ -3,25 +3,25 @@
 # author: songyouwei <youwei0314@gmail.com>
 # Copyright (C) 2018. All Rights Reserved.
 
-import logging
 import argparse
+import logging
 import math
 import os
-import sys
 import random
-import numpy
-
-from sklearn import metrics
+import sys
 from time import strftime, localtime
 
-from transformers import BertModel, AutoTokenizer, AutoModel
-
+import numpy
 import torch
 import torch.nn as nn
+from collections import defaultdict
+from sklearn import metrics
 from torch.utils.data import DataLoader, random_split
+from transformers import BertModel, AutoModel
 
-from data_utils import build_tokenizer, Tokenizer4Bert, ABSADataset
+from data_utils import Tokenizer4Bert, ABSADataset
 from models.bert_spc import BERT_SPC
+from preprocessors.dataset_preparator import DatasetPreparator
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,21 +32,11 @@ class Instructor:
     def __init__(self, opt):
         self.opt = opt
         # bert-nek adom meg a modelt amit szeretnék használni, jelen esetben a hubertet
-        # if 'bert' in opt.model_name:
         tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
         bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
         self.model = opt.model_class(bert, opt).to(opt.device)
-        # else:
-        #     tokenizer = build_tokenizer(
-        #         fnames=[opt.dataset_file['train'], opt.dataset_file['test']],
-        #         max_seq_len=opt.max_seq_len,
-        #         dat_fname='{0}_tokenizer.dat'.format(opt.dataset))
-        #     embedding_matrix = build_embedding_matrix(
-        #         word2idx=tokenizer.word2idx,
-        #         embed_dim=opt.embed_dim,
-        #         dat_fname='{0}_{1}_embedding_matrix.dat'.format(str(opt.embed_dim), opt.dataset))
-        #     self.model = opt.model_class(embedding_matrix, opt).to(opt.device)
-
+        # TODO: egy fájl legyen, amit aztán random splitelünk fel train-test-re!
+        # Még az ABSADataset-ek létrejötte előtt a .txt -k alapján
         self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
         self.testset = ABSADataset(opt.dataset_file['test'], tokenizer)
         assert 0 <= opt.valset_ratio < 1
@@ -72,6 +62,24 @@ class Instructor:
         logger.info('> training arguments:')
         for arg in vars(self.opt):
             logger.info('>>> {0}: {1}'.format(arg, getattr(self.opt, arg)))
+
+    def stratified_split(self, dataset: torch.utils.data.Dataset, labels, fraction, random_state=None):
+        if random_state:
+            random.seed(random_state)
+        indices_per_label = defaultdict(list)
+        for index, label in enumerate(labels):
+            indices_per_label[label].append(index)
+        first_set_indices, second_set_indices = list(), list()
+        for label, indices in indices_per_label.items():
+            n_samples_for_label = round(len(indices) * fraction)
+            random_indices_sample = random.sample(indices, n_samples_for_label)
+            first_set_indices.extend(random_indices_sample)
+            second_set_indices.extend(set(indices) - set(random_indices_sample))
+        first_set_inputs = torch.utils.data.Subset(dataset, first_set_indices)
+        first_set_labels = list(map(labels.__getitem__, first_set_indices))
+        second_set_inputs = torch.utils.data.Subset(dataset, second_set_indices)
+        second_set_labels = list(map(labels.__getitem__, second_set_indices))
+        return first_set_inputs, first_set_labels, second_set_inputs, second_set_labels
 
     def _reset_params(self):
         for child in self.model.children():
@@ -180,7 +188,7 @@ class Instructor:
         logger.info('>> test_acc: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_f1))
 
 
-def main():
+def start():
     # Hyper Parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', default='bert_spc', type=str)
@@ -274,4 +282,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    preparator = DatasetPreparator()
+    start()
