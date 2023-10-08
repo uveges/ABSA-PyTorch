@@ -21,6 +21,7 @@ PATHS = {
     "hu_core_news_trf": "pip install https://huggingface.co/huspacy/hu_core_news_trf/resolve/main/hu_core_news_trf-any-py3-none-any.whl"
 }
 
+
 class DataPreparatorForPrediction(object):
 
     def __init__(self,
@@ -46,12 +47,14 @@ class DataPreparatorForPrediction(object):
             sys.exit(e)
 
     def start(self):
-        if self.data_for_prediction.endswith('xlsx'):
+        if self.data_for_prediction.endswith('.xlsx'):
             dataframe = pd.read_excel(self.data_for_prediction)
             self.sentences = dataframe[self.text_column_name].values.tolist()
             self.prediction_data_as_list = self.create_train_format(self.sentences)
-            self.aspects = dataframe['Label'].values.tolist()
-        elif self.data_for_prediction.endswith('txt'):
+            self.sentences = self.prediction_data_as_list[0::3]
+            self.aspects = self.prediction_data_as_list[1::3]
+            self.aspects = [a.strip() for a in self.aspects]
+        elif self.data_for_prediction.endswith('.txt'):
             with open(self.data_for_prediction, 'r', encoding='utf8') as i_:
                 lines = i_.readlines()
             self.sentences = lines[::3]
@@ -82,19 +85,6 @@ class DataPreparatorForPrediction(object):
                 results_.append('0')
         print("Done!")
         return results_
-
-def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
-    x = (np.ones(maxlen) * value).astype(dtype)
-    if truncating == 'pre':
-        trunc = sequence[-maxlen:]
-    else:
-        trunc = sequence[:maxlen]
-    trunc = np.asarray(trunc, dtype=dtype)
-    if padding == 'post':
-        x[:len(trunc)] = trunc
-    else:
-        x[-len(trunc):] = trunc
-    return x
 
 
 class ABSA_Dataset_(Dataset):
@@ -187,20 +177,34 @@ class Predictor(object):
         self.model.eval()
         test_data_loader = DataLoader(dataset=self.dataset, batch_size=1, shuffle=False)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print('Getting predictions...')
         with torch.no_grad():
             for i_batch, t_batch in enumerate(tqdm(test_data_loader)):
                 t_inputs = [t_batch[col].to(device) for col in ['concat_bert_indices', 'concat_segments_indices']]
                 t_outputs = self.model(t_inputs)
                 predicted_classes = torch.argmax(t_outputs, -1).tolist()
                 predictions.extend(predicted_classes)
-        # print(predictions)
+        print('Done!')
         return predictions
 
     def start(self):
         return self.evaluate()
 
+def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
+    x = (np.ones(maxlen) * value).astype(dtype)
+    if truncating == 'pre':
+        trunc = sequence[-maxlen:]
+    else:
+        trunc = sequence[:maxlen]
+    trunc = np.asarray(trunc, dtype=dtype)
+    if padding == 'post':
+        x[:len(trunc)] = trunc
+    else:
+        x[-len(trunc):] = trunc
+    return x
+
 if __name__ == '__main__':
-    file = "../datasets/Validated_Test.txt"
+    file = "../datasets/AbsaTESZT.xlsx"
     text_column = "text"
 
     p = DataPreparatorForPrediction(data_for_prediction=file, text_column_name=text_column)
@@ -213,12 +217,13 @@ if __name__ == '__main__':
     data_as_list = p.get_dataset_as_list()
     aspects = p.get_aspects_as_list()
 
-    with open(file, 'r', encoding='utf8') as tmp:
-        lines_ = tmp.readlines()
-        GS_labels = lines_[2::3]
-        GS_labels = [int(g) for g in GS_labels]
+    # with open(file, 'r', encoding='utf8') as tmp:
+    #     lines_ = tmp.readlines()
+    #     GS_labels = lines_[2::3]
+    #     GS_labels = [int(g) for g in GS_labels]
 
-    results = pd.DataFrame(list(zip(data_as_list, aspects, predictions, GS_labels)), columns=['text', 'aspect', 'prediction', 'Gold Standard'])
-    print(classification_report(y_true=GS_labels, y_pred=predictions))
+    # results = pd.DataFrame(list(zip(data_as_list, aspects, predictions, GS_labels)), columns=['text', 'aspect', 'prediction', 'Gold Standard'])
+    # print(classification_report(y_true=GS_labels, y_pred=predictions))
 
-    results.to_excel('../resources/predictions_DEMO.xlsx')
+    results = pd.DataFrame(list(zip(data_as_list, aspects, predictions)), columns=['Sentence', 'Aspect', 'Label'])
+    results.to_excel('../resources/predictions_AbsaTESZT.xlsx')
