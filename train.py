@@ -35,7 +35,6 @@ class Instructor:
         tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
         bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
         self.model = opt.model_class(bert, opt).to(opt.device)
-        # TODO: egy fájl legyen, amit aztán random splitelünk fel train-test-re!
         # Még az ABSADataset-ek létrejötte előtt a .txt -k alapján
         self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
         self.testset = ABSADataset(opt.dataset_file['test'], tokenizer)
@@ -192,7 +191,7 @@ def start():
     # Hyper Parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', default='bert_spc', type=str)
-    parser.add_argument('--dataset', default='opinhubank', type=str, help='twitter, restaurant, opinhubank')
+    parser.add_argument('--dataset', default='validated', type=str, help='twitter, restaurant, opinhubank, validated')
     parser.add_argument('--optimizer', default='adam', type=str)
     parser.add_argument('--initializer', default='xavier_uniform_', type=str)
     parser.add_argument('--lr', default=2e-5, type=float, help='try 5e-5, 2e-5 for BERT, 1e-3 for others')
@@ -233,6 +232,10 @@ def start():
         'opinhubank': {
             'train': './datasets/OpinHuBank_Train.txt',
             'test': './datasets/OpinHuBank_Test.txt'
+        },
+        'validated': {
+            'train': './datasets/Validated_Train.txt',
+            'test': './datasets/Validated_Test.txt'
         }
     }
     input_colses = {
@@ -271,8 +274,7 @@ def start():
     opt.inputs_cols = input_colses[opt.model_name]
     opt.initializer = initializers[opt.initializer]
     opt.optimizer = optimizers[opt.optimizer]
-    opt.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') \
-        if opt.device is None else torch.device(opt.device)
+    opt.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if opt.device is None else torch.device(opt.device)
 
     log_file = '{}-{}-{}.log'.format(opt.model_name, opt.dataset, strftime("%y%m%d-%H%M", localtime()))
     logger.addHandler(logging.FileHandler(log_file))
@@ -282,5 +284,5 @@ def start():
 
 
 if __name__ == '__main__':
-    preparator = DatasetPreparator()
+    # preparator = DatasetPreparator()
     start()
