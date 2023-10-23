@@ -190,6 +190,7 @@ class Predictor(object):
     def start(self):
         return self.evaluate()
 
+
 def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
     x = (np.ones(maxlen) * value).astype(dtype)
     if truncating == 'pre':
@@ -203,11 +204,15 @@ def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating
         x[-len(trunc):] = trunc
     return x
 
-if __name__ == '__main__':
-    file = "../datasets/AbsaTESZT.xlsx"
-    text_column = "text"
 
-    p = DataPreparatorForPrediction(data_for_prediction=file, text_column_name=text_column)
+if __name__ == '__main__':
+    part = 7
+    file = f"../datasets/napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx"
+    text_column = "Text"
+
+    p = DataPreparatorForPrediction(data_for_prediction=file,
+                                    text_column_name=text_column,
+                                    huspacy_model_name="hu_core_news_trf")
     prepared_dataset = p.start()
 
     predictor = Predictor(prepared_dataset, state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
@@ -226,4 +231,4 @@ if __name__ == '__main__':
     # print(classification_report(y_true=GS_labels, y_pred=predictions))
 
     results = pd.DataFrame(list(zip(data_as_list, aspects, predictions)), columns=['Sentence', 'Aspect', 'Label'])
-    results.to_excel('../resources/predictions_AbsaTESZT.xlsx')
+    results.to_excel(f'../resources/RESULTS_napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx')
