@@ -55,7 +55,7 @@ class DataPreparatorForPrediction(object):
     def start(self):
         if self.data_for_prediction.endswith('.xlsx'):
             dataframe = pd.read_excel(self.data_for_prediction)
-            self.sentences = dataframe[self.text_column_name].values.tolist()
+            self.sentences = dataframe[self.text_column_name].values.tolist()[:11]      # TODO: REMOVE '[:11]'
             self.prediction_data_as_list = self.create_train_format(self.sentences)
             self.sentences = self.prediction_data_as_list[0::3]
             self.aspects = self.prediction_data_as_list[1::3]
@@ -168,14 +168,6 @@ class Predictor(object):
         print('Loading state-dict to model...')
         model.load_state_dict(checkpoint)
         print('Done!')
-        # self.model = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
-        # optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-05, weight_decay=0.01)
-        # checkpoint = torch.load('../state_dict/bert_spc_validated_val_acc_0.7159')
-        # self.model.load_state_dict(checkpoint['model_state_dict'])
-        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        # epoch = checkpoint['epoch']
-        # loss = checkpoint['loss']
-        # self.model.load_state_dict(torch.load('../state_dict/bert_spc_validated_val_acc_0.7159'))
         return model
 
     def evaluate(self):
@@ -223,6 +215,7 @@ if __name__ == '__main__':
     for part in range(14):
         # part = 7
         file = f"../datasets/parl_speech_7_segmented_part_{part}.xlsx"
+        # file = "../datasets/refactor_test.xlsx"
         text_column = "text"
 
         p = DataPreparatorForPrediction(data_for_prediction=file,
@@ -248,3 +241,4 @@ if __name__ == '__main__':
 
         results = pd.DataFrame(list(zip(data_as_list, aspects, predictions)), columns=['Sentence', 'Aspect', 'Label'])
         results.to_excel(f'../resources/RESULTS_napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx')
+        # results.to_excel(f'../resources/RESULTS_refactor_test.xlsx')
