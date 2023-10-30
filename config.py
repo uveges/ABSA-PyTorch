@@ -5,3 +5,5 @@ model_name = "bert_spc"
 
 dateset_name = "Validated"
 test_size = 0.2
+
+

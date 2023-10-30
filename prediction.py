@@ -18,7 +18,7 @@ from models.bert_spc import BERT_SPC
 
 PATHS = {
     "hu_core_news_lg": "pip install https://huggingface.co/huspacy/hu_core_news_lg/resolve/main/hu_core_news_lg-any-py3-none-any.whl",
-    "hu_core_news_trf": "pip install https://huggingface.co/huspacy/hu_core_news_trf/resolve/main/hu_core_news_trf-any-py3-none-any.whl"
+    "hu_core_news_trf": "pip install https://huggingface.co/huspacy/hu_core_news_trf/resolve/v3.5.2/hu_core_news_trf-any-py3-none-any.whl"
 }
 
 
@@ -41,7 +41,13 @@ class DataPreparatorForPrediction(object):
         self.sentences = []
         self.aspects = []
         try:
-            self.nlp = spacy.load(self.model_name)
+            if self.model_name == "hu_core_news_lg":
+            # self.nlp = spacy.load(self.model_name)
+                import hu_core_news_lg
+                self.nlp = hu_core_news_lg.load()
+            if self.model_name == "hu_core_news_trf":
+                import hu_core_news_trf
+                self.nlp = hu_core_news_trf.load()
         except (OSError, IOError) as e:
             print(f"Error! Language model not installed. You can install it by 'pip install {PATHS[self.model_name]}'")
             sys.exit(e)
@@ -206,29 +212,39 @@ def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating
 
 
 if __name__ == '__main__':
-    part = 7
-    file = f"../datasets/napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx"
-    text_column = "Text"
 
-    p = DataPreparatorForPrediction(data_for_prediction=file,
-                                    text_column_name=text_column,
-                                    huspacy_model_name="hu_core_news_trf")
-    prepared_dataset = p.start()
+    # kiszerdónk egyesével minden sort a bemenetben
+    # a sorból megkeressük a text -oszlopot
+    # megkeressük a névelemeket - annyi példányban lemásoljuk az eredeti sort, ahány NE volt benne
+    # ezeket a sorokat egyesével előkészítjük megfelelő formába
+    # prediktálunk rá soronként
+    # az eredményt kimentjük
 
-    predictor = Predictor(prepared_dataset, state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
-    predictions = predictor.start()
-    predictions = [p-1 for p in predictions]            # szentimentre, a címke számozás miatt
+    for part in range(14):
+        # part = 7
+        file = f"../datasets/parl_speech_7_segmented_part_{part}.xlsx"
+        text_column = "text"
 
-    data_as_list = p.get_dataset_as_list()
-    aspects = p.get_aspects_as_list()
+        p = DataPreparatorForPrediction(data_for_prediction=file,
+                                        text_column_name=text_column,
+                                        # huspacy_model_name="hu_core_news_trf"
+                                        )
+        prepared_dataset = p.start()
 
-    # with open(file, 'r', encoding='utf8') as tmp:
-    #     lines_ = tmp.readlines()
-    #     GS_labels = lines_[2::3]
-    #     GS_labels = [int(g) for g in GS_labels]
+        predictor = Predictor(prepared_dataset, state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
+        predictions = predictor.start()
+        predictions = [p-1 for p in predictions]            # szentimentre, a címke számozás miatt
 
-    # results = pd.DataFrame(list(zip(data_as_list, aspects, predictions, GS_labels)), columns=['text', 'aspect', 'prediction', 'Gold Standard'])
-    # print(classification_report(y_true=GS_labels, y_pred=predictions))
+        data_as_list = p.get_dataset_as_list()
+        aspects = p.get_aspects_as_list()
 
-    results = pd.DataFrame(list(zip(data_as_list, aspects, predictions)), columns=['Sentence', 'Aspect', 'Label'])
-    results.to_excel(f'../resources/RESULTS_napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx')
+        # with open(file, 'r', encoding='utf8') as tmp:
+        #     lines_ = tmp.readlines()
+        #     GS_labels = lines_[2::3]
+        #     GS_labels = [int(g) for g in GS_labels]
+
+        # results = pd.DataFrame(list(zip(data_as_list, aspects, predictions, GS_labels)), columns=['text', 'aspect', 'prediction', 'Gold Standard'])
+        # print(classification_report(y_true=GS_labels, y_pred=predictions))
+
+        results = pd.DataFrame(list(zip(data_as_list, aspects, predictions)), columns=['Sentence', 'Aspect', 'Label'])
+        results.to_excel(f'../resources/RESULTS_napirend_elotti_2006_2010_SEGMENTED_part_{part}.xlsx')
