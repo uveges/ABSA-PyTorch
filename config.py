@@ -7,6 +7,8 @@ dateset_name = "Validated"
 test_size = 0.2
 
 text_column = "text"
+NE_column = "Named Entity"
+predictions_column = "Prediction"
 
 model_parameters = {
     'dropout': 0.01,

@@ -1,35 +1,38 @@
-import hu_core_news_lg
-import pandas as pd
-from transformers import AutoModel
-import torch
+import sys
 from argparse import Namespace
-
-import config
-from models.bert_spc import BERT_SPC
 from pathlib import Path
-from data_utils import Tokenizer4Bert
+from typing import List, Tuple, Dict
+
 import numpy as np
-from typing import List
-from tqdm import tqdm
+import pandas as pd
+import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+from transformers import AutoModel
+
+import config
+from data_utils import Tokenizer4Bert
+from models.bert_spc import BERT_SPC
+from tqdm import tqdm
 
 
 def main():
-    # test_text = 'DR. $T$ ANDRÁS (LMP): Köszönöm a szót, elnök úr.'
-    # test_ne = 'schiffer'
-    #
-    # test_text_list = ['DR. $T$ ANDRÁS (LMP): Köszönöm a szót, elnök úr.'] * 10
-    # test_ne_list = ['schiffer'] * 10
 
-    df = pd.read_excel("../datasets/parl_speech_7_segmented_part_0.xlsx")
-    texts = df[config.text_column].values.tolist()[:11]
+    for part in range(14):
+        file = f"../datasets/parl_speech_7_segmented_part_{part}.xlsx"
+        df = pd.read_excel(file)
+        preparator = DataPreparator(dataframe=df)
+        data_dict = preparator.start()
 
-
-    predictor = Predictor(state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
-    for text, ne in zip(test_text_list, test_ne_list):
-        class_ = predictor.predict(text=text, named_entity=ne)
-        print(class_)
+        predictor = Predictor(state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
+        predictions = []
+        print("Generating predictions...")
+        for sent, aspect in tqdm(zip(data_dict[config.text_column], data_dict[config.NE_column])):
+            prediction = predictor.predict(text=sent, named_entity=aspect)
+            predictions.extend(prediction)
+        data_dict[config.predictions_column] = predictions
+        result_frame = pd.DataFrame.from_dict(data_dict)
+        result_frame.to_excel(f'../resources/RESULTS_napirend_elotti_2006_2010_segmented_part_{part}.xlsx')
 
 
 class Predictor(object):
@@ -143,6 +146,69 @@ class ABSA_Dataset_(Dataset):
         return len(self.data)
 
 
+class DataPreparator(object):
+
+    def __init__(self, dataframe: pd.DataFrame, huspacy_model_name: str = "hu_core_news_lg"):
+        self.dataframe = dataframe
+        self.original_data_list_per_column = {}     # {column_name: [original values]}
+        self.column_names = []
+        self.result_data_list_per_column = {config.NE_column: []}       # {column_name: [original values]} --> ready for prediction
+        self.model_name = huspacy_model_name
+        self.nlp = None
+        self.PATHS = {
+            "hu_core_news_lg": "pip install https://huggingface.co/huspacy/hu_core_news_lg/resolve/main/hu_core_news_lg-any-py3-none-any.whl",
+            "hu_core_news_trf": "pip install https://huggingface.co/huspacy/hu_core_news_trf/resolve/v3.5.2/hu_core_news_trf-any-py3-none-any.whl"
+        }
+        try:
+            if self.model_name == "hu_core_news_lg":
+                import hu_core_news_lg
+                self.nlp = hu_core_news_lg.load()
+            if self.model_name == "hu_core_news_trf":
+                import hu_core_news_trf
+                self.nlp = hu_core_news_trf.load()
+        except (OSError, IOError) as e:
+            print(f"Error! Language model not installed. You can install it by 'pip install {self.PATHS[self.model_name]}'")
+            sys.exit(e)
+
+    def start(self) -> Dict:
+        self.column_names = self.dataframe.columns.values.tolist()
+        for c in self.column_names:
+            if c not in self.original_data_list_per_column:
+                self.original_data_list_per_column[c] = []
+                self.result_data_list_per_column[c] = []
+            self.original_data_list_per_column[c] = self.dataframe[c].values.tolist()
+        print("Preprocess data...")
+        for i, t in tqdm(enumerate(self.original_data_list_per_column[config.text_column])):      #index a többi eredeti lista-beli elem poziját is jelöli
+            # print(i, t)
+            sents, aspects = self.__preprocess_with_spacy(t)
+            # print(sents, aspects)
+            repetitions = len(sents)
+            for column in self.column_names:
+                if column == config.text_column:
+                    for rep in range(repetitions):
+                        self.result_data_list_per_column[column].append(sents[rep])
+                else:
+                    for rep in range(repetitions):
+                        self.result_data_list_per_column[column].append(self.original_data_list_per_column[column][i])
+            for rep in range(repetitions):
+                self.result_data_list_per_column[config.NE_column].append(aspects[rep])
+
+        return self.result_data_list_per_column
+
+    def __preprocess_with_spacy(self, text: str) -> Tuple[List[str], List[str]]:
+
+        preprocessed_sentences, named_entities = ([] for i in range(2))
+        doc = self.nlp(text)
+        for ent in doc.ents:
+            lemma = self.nlp(ent.text)[0].lemma_
+            start_index = ent.start_char
+            end_index = start_index + len(lemma)
+            preprocessed_sentences.append(text[:start_index] + "$T$" + text[end_index:])
+            named_entities.append(lemma)
+
+        return preprocessed_sentences, named_entities
+
+
 def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating='post', value=0):
     x = (np.ones(maxlen) * value).astype(dtype)
     if truncating == 'pre':
@@ -155,6 +221,7 @@ def pad_and_truncate(sequence, maxlen, dtype='int64', padding='post', truncating
     else:
         x[-len(trunc):] = trunc
     return x
+
 
 if __name__ == '__main__':
     main()
