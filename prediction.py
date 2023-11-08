@@ -13,6 +13,7 @@ from tqdm import tqdm
 from transformers import AutoModel
 from sklearn.metrics import classification_report
 
+import config
 from data_utils import Tokenizer4Bert
 from models.bert_spc import BERT_SPC
 
@@ -153,7 +154,7 @@ class Predictor(object):
         self.state_dict = state_dict
         self.dataset = dataset
         self.model = self.load_model()
-        # self.model.load_state_dict(torch.load('../state_dict/bert_spc_validated_val_acc_0.7159'))
+        # self.model.load_state_dict(torch.load('../state_dict/HUN_bert_spc_validated_val_acc_0.7159'))
 
 
     def load_model(self):
@@ -224,7 +225,7 @@ if __name__ == '__main__':
                                         )
         prepared_dataset = p.start()
 
-        predictor = Predictor(prepared_dataset, state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
+        predictor = Predictor(prepared_dataset, state_dict=config.checkpoint)
         predictions = predictor.start()
         predictions = [p-1 for p in predictions]            # szentimentre, a címke számozás miatt
 

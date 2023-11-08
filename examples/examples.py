@@ -24,7 +24,7 @@ def main():
         preparator = DataPreparator(dataframe=df)
         data_dict = preparator.start()
 
-        predictor = Predictor(state_dict='../state_dict/bert_spc_validated_val_acc_0.7159')
+        predictor = Predictor(state_dict=config.checkpoint)
         predictions = []
         print("Generating predictions...")
         for sent, aspect in tqdm(zip(data_dict[config.text_column], data_dict[config.NE_column])):
@@ -49,7 +49,7 @@ class Predictor(object):
         if self.verbose:
             print('Loading BERT model...')
 
-        bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+        bert = AutoModel.from_pretrained(config.model_parameters['bert_model_name'])
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         x = {'dropout': config.model_parameters['dropout'],
              "bert_dim": config.model_parameters['bert_dim'],

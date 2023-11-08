@@ -19,6 +19,7 @@ from sklearn import metrics
 from torch.utils.data import DataLoader, random_split
 from transformers import BertModel, AutoModel
 
+import config
 from data_utils import Tokenizer4Bert, ABSADataset
 from models.bert_spc import BERT_SPC
 from preprocessors.dataset_preparator import DatasetPreparator
@@ -32,8 +33,8 @@ class Instructor:
     def __init__(self, opt):
         self.opt = opt
         # bert-nek adom meg a modelt amit szeretnék használni, jelen esetben a hubertet
-        tokenizer = Tokenizer4Bert(opt.max_seq_len, opt.pretrained_bert_name)
-        bert = AutoModel.from_pretrained("SZTAKI-HLT/hubert-base-cc")
+        tokenizer = Tokenizer4Bert(opt.max_seq_len, config.model_parameters['bert_model_name'])
+        bert = AutoModel.from_pretrained(config.model_parameters['bert_model_name'])
         self.model = opt.model_class(bert, opt).to(opt.device)
         # Még az ABSADataset-ek létrejötte előtt a .txt -k alapján
         self.trainset = ABSADataset(opt.dataset_file['train'], tokenizer)
@@ -182,6 +183,7 @@ class Instructor:
 
         self._reset_params()
         best_model_path = self._train(criterion, optimizer, train_data_loader, val_data_loader)
+        print(f"Best: {best_model_path}")
         self.model.load_state_dict(torch.load(best_model_path))
         test_acc, test_f1 = self._evaluate_acc_f1(test_data_loader)
         logger.info('>> test_acc: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_f1))
