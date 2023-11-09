@@ -178,10 +178,8 @@ class DataPreparator(object):
                 self.result_data_list_per_column[c] = []
             self.original_data_list_per_column[c] = self.dataframe[c].values.tolist()
         print("Preprocess data...")
-        for i, t in tqdm(enumerate(self.original_data_list_per_column[config.text_column])):      #index a többi eredeti lista-beli elem poziját is jelöli
-            # print(i, t)
+        for i, t in tqdm(enumerate(self.original_data_list_per_column[config.text_column])):
             sents, aspects = self.__preprocess_with_spacy(t)
-            # print(sents, aspects)
             repetitions = len(sents)
             for column in self.column_names:
                 if column == config.text_column:
