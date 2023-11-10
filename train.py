@@ -253,9 +253,7 @@ def start():
         'aoa': ['text_indices', 'aspect_indices'],
         'mgan': ['text_indices', 'aspect_indices', 'left_indices'],
         'asgcn': ['text_indices', 'aspect_indices', 'left_indices', 'dependency_graph'],
-        'bert_spc': ['concat_bert_indices', 'concat_segments_indices'],
-        'aen_bert': ['text_bert_indices', 'aspect_bert_indices'],
-        'lcf_bert': ['concat_bert_indices', 'concat_segments_indices', 'text_bert_indices', 'aspect_bert_indices'],
+        'bert_spc': ['concat_bert_indices', 'concat_segments_indices']
     }
     initializers = {
         'xavier_uniform_': torch.nn.init.xavier_uniform_,

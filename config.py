@@ -1,6 +1,3 @@
-# Traning configuration
-model_name = "bert_spc"
-
 # Train - Test set creation parameters
 
 dateset_name = "Validated"
@@ -20,12 +17,12 @@ model_parameters = {
     "bert_dim": 768,
     "polarities_dim": 3,
     'max_seq_len': 85,
-    # 'bert_model_name': "SZTAKI-HLT/hubert-base-cc"    # HUN
-    'bert_model_name': "bert-base-cased",  # ENG
+    # 'bert_model_name': "SZTAKI-HLT/hubert-base-cc"  # HUN
+    'bert_model_name': "bert-base-cased",           # ENG
     'model_name': 'bert_spc',
     'dataset': 'validated',
-    'optimizer': 'adam',
-    'initializer': 'xavier_uniform_',
+    'optimizer': 'adam',                            # FROM: ['adadelta', 'adagrad', 'adam', 'adamax', 'asgd', 'rmsprop', 'sgd']
+    'initializer': 'xavier_uniform_',               # FROM: ['xavier_uniform_', 'xavier_normal_', 'orthogonal_']
     'lr': 2e-5,
     'l2reg': 0.01,
     'num_epoch': 20,
