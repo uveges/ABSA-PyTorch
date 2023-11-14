@@ -12,7 +12,7 @@ def simplest_case_usage():
     file_path = '../resources/parl_speech_7_segmented_part_13.xlsx'
 
     ################################################ Keep intact #######################################################
-    df = pd.read_excel(file_path)[:10]
+    df = pd.read_excel(file_path)
 
     preparator = DataPreparator(dataframe=df, huspacy_model_name="hu_core_news_lg")
     data_dict = preparator.start()
