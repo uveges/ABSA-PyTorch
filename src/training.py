@@ -23,16 +23,17 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class Trainer(object):
+    """
+    Performs fine-tuning for the selected BERT model.
+    Keep in mind, that hyperparameters are scraped from `config.py` file.
+    """
 
     def __init__(self):
         self.MODEL_OPTIONS = config.model_parameters
         self.start_train_setting()
         self.opt = Namespace(**self.MODEL_OPTIONS)
 
-    def train(self,
-              train_dataset_path: str,
-              test_dataset_path: str,
-              bert_model_name: str = config.model_parameters['bert_model_name']):
+    def train(self, train_dataset_path: str, test_dataset_path: str, bert_model_name: str = config.model_parameters['bert_model_name']):
 
         ins = Instructor(self.opt, bert_model_name, train_dataset_path, test_dataset_path)
         ins.run()
@@ -69,11 +70,8 @@ class Trainer(object):
             'rmsprop': torch.optim.RMSprop,     # default lr=0.01
             'sgd': torch.optim.SGD,
         }
-        # dataset_dict = {'train': config.train_dataset,
-        #                 'test': config.test_dataset}
 
         self.MODEL_OPTIONS['model_class'] = model_classes[config.model_parameters['model_name']]
-        # self.MODEL_OPTIONS['dataset_file'] = dataset_dict
         self.MODEL_OPTIONS['inputs_cols'] = input_colses[config.model_parameters['model_name']]
         self.MODEL_OPTIONS['initializer'] = initializers[config.model_parameters['initializer']]
         self.MODEL_OPTIONS['optimizer'] = optimizers[config.model_parameters['optimizer']]
@@ -82,6 +80,7 @@ class Trainer(object):
 
         log_file = '{}-{}.log'.format(config.model_parameters['model_name'], strftime("%y%m%d-%H%M", localtime()))
         logger.addHandler(logging.FileHandler(log_file))
+
 
 class Instructor:
     def __init__(self, opt, bert_model_name: str, train_dataset_path, test_dataset_path):
@@ -117,10 +116,9 @@ class Instructor:
         for arg in vars(self.opt):
             logger.info('>>> {0}: {1}'.format(arg, getattr(self.opt, arg)))
 
-
     def _reset_params(self):
         for child in self.model.children():
-            if type(child) != BertModel:  # skip bert params
+            if type(child) != BertModel:
                 for p in child.parameters():
                     if p.requires_grad:
                         if len(p.shape) > 1:
@@ -139,11 +137,10 @@ class Instructor:
             logger.info('>' * 100)
             logger.info('epoch: {}'.format(i_epoch))
             n_correct, n_total, loss_total = 0, 0, 0
-            # switch model to training mode
             self.model.train()
+
             for i_batch, batch in enumerate(train_data_loader):
                 global_step += 1
-                # clear gradient accumulators
                 optimizer.zero_grad()
 
                 inputs = [batch[col].to(self.opt.device) for col in self.opt.inputs_cols]
@@ -203,13 +200,11 @@ class Instructor:
 
         acc = n_correct / n_total
         f1 = metrics.f1_score(t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu(), labels=[0, 1, 2], average='macro')
-        # classification_report kiiratása
         classification_report = metrics.classification_report(t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu(), labels=[0, 1, 2])
         print(classification_report)
         return acc, f1
 
     def run(self):
-        # Loss and Optimizer
         criterion = nn.CrossEntropyLoss()
         _params = filter(lambda p: p.requires_grad, self.model.parameters())
         optimizer = self.opt.optimizer(_params, lr=self.opt.lr, weight_decay=self.opt.l2reg)

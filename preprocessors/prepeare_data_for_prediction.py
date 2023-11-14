@@ -27,7 +27,7 @@ class DataPreparator(object):
         self.dataframe = dataframe
         self.original_data_list_per_column = {}                         # {column_name: [original values]}
         self.column_names = []
-        self.result_data_list_per_column = {config.NE_column: []}       # {column_name: [original values]} --> ready for prediction
+        self.result_data_list_per_column = {config.NE_column: [], config.NE_type_column: []}       # {column_name: [original values]} --> ready for prediction
         self.model_name = huspacy_model_name
         self.nlp = None
         self.PATHS = {
@@ -45,7 +45,7 @@ class DataPreparator(object):
             print(f"Error! Language model not installed. You can install it by 'pip install {self.PATHS[self.model_name]}'")
             sys.exit(e)
 
-    def start(self) -> Dict:
+    def start(self, verbose: bool = False) -> Dict:
         """
         Creates the prediction-ready format in dictionary.
         First Named Entities recognised, then a sentence will have as many instances in the output as many NE it contained.
@@ -62,7 +62,7 @@ class DataPreparator(object):
             self.original_data_list_per_column[c] = self.dataframe[c].values.tolist()
         print("Preprocess data...")
         for i, t in tqdm(enumerate(self.original_data_list_per_column[config.text_column])):
-            sents, aspects = self.__preprocess_with_spacy(t)
+            sents, aspects, ent_types = self.__preprocess_with_spacy(t)
             repetitions = len(sents)
             for column in self.column_names:
                 if column == config.text_column:
@@ -73,18 +73,21 @@ class DataPreparator(object):
                         self.result_data_list_per_column[column].append(self.original_data_list_per_column[column][i])
             for rep in range(repetitions):
                 self.result_data_list_per_column[config.NE_column].append(aspects[rep])
+                self.result_data_list_per_column[config.NE_type_column].append(ent_types[rep])
 
         return self.result_data_list_per_column
 
-    def __preprocess_with_spacy(self, text: str) -> Tuple[List[str], List[str]]:
+    def __preprocess_with_spacy(self, text: str) -> Tuple[List[str], List[str], List[str]]:
 
-        preprocessed_sentences, named_entities = ([] for i in range(2))
+        preprocessed_sentences, named_entities, entity_types = ([] for i in range(3))
         doc = self.nlp(text)
         for ent in doc.ents:
-            lemma = self.nlp(ent.text)[0].lemma_
+            lemma = ent.lemma_
+            entity_type = ent.label_
             start_index = ent.start_char
             end_index = start_index + len(lemma)
             preprocessed_sentences.append(text[:start_index] + "$T$" + text[end_index:])
             named_entities.append(lemma)
+            entity_types.append(entity_type)
 
-        return preprocessed_sentences, named_entities
+        return preprocessed_sentences, named_entities, entity_types

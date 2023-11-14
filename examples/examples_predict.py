@@ -9,12 +9,12 @@ from src.prediction import Predictor
 
 
 def simplest_case_usage():
-    file_path = '../datasets/parl_speech_7_segmented_part_0.xlsx'
+    file_path = '../resources/parl_speech_7_segmented_part_13.xlsx'
 
     ################################################ Keep intact #######################################################
-    df = pd.read_excel(file_path)
+    df = pd.read_excel(file_path)[:10]
 
-    preparator = DataPreparator(dataframe=df)
+    preparator = DataPreparator(dataframe=df, huspacy_model_name="hu_core_news_lg")
     data_dict = preparator.start()
 
     predictor = Predictor(state_dict=config.checkpoint)

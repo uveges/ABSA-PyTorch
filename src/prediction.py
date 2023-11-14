@@ -28,6 +28,7 @@ class Predictor(object):
 
         bert = AutoModel.from_pretrained(config.model_parameters['bert_model_name'])
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f"GPU available: {torch.cuda.is_available()}")
         x = {'dropout': config.model_parameters['dropout'],
              "bert_dim": config.model_parameters['bert_dim'],
              "polarities_dim": config.model_parameters['polarities_dim']}
