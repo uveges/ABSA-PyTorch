@@ -19,7 +19,7 @@ test_dataset = '../datasets/Validated_Test.txt'
 # bert_model = "bert-base-cased"
 bert_model = "SZTAKI-HLT/hubert-base-cc"            # FROM: ["bert-base-cased", "SZTAKI-HLT/hubert-base-cc"]
 
-prediction_results_folder = "../results/"
+prediction_results_folder = "results/"
 
 
 ########################################################################################################################
