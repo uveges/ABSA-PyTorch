@@ -38,7 +38,7 @@ def more_files():
     for file in os.listdir(folder):
         f = os.path.join(folder, file)
         if os.path.isfile(f) and f.endswith('.xlsx'):
-            df = pd.read_excel(file)
+            df = pd.read_excel(f)
             print(f'File read for preprocess: {file}')
 
             preparator = DataPreparator(dataframe=df)
