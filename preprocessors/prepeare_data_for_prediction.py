@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 from typing import List, Tuple, Dict
 from tqdm import tqdm
+import spacy
 
 
 class DataPreparator(object):
@@ -34,13 +35,18 @@ class DataPreparator(object):
             "hu_core_news_lg": "pip install https://huggingface.co/huspacy/hu_core_news_lg/resolve/main/hu_core_news_lg-any-py3-none-any.whl",
             "hu_core_news_trf": "pip install https://huggingface.co/huspacy/hu_core_news_trf/resolve/v3.5.2/hu_core_news_trf-any-py3-none-any.whl"
         }
+
+        ##################
+        spacy.prefer_gpu()
+        ##################
+        
         try:
             if self.model_name == "hu_core_news_lg":
                 import hu_core_news_lg
-                self.nlp = hu_core_news_lg.load()
+                self.nlp = spacy.load("hu_core_news_lg")
             if self.model_name == "hu_core_news_trf":
                 import hu_core_news_trf
-                self.nlp = hu_core_news_trf.load()
+                self.nlp = spacy.load("hu_core_news_trf")
         except (OSError, IOError) as e:
             print(f"Error! Language model not installed. You can install it by 'pip install {self.PATHS[self.model_name]}'")
             sys.exit(e)
