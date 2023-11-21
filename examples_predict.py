@@ -34,8 +34,11 @@ def simplest_case_usage():
 def more_files():
 
     folder = 'resources'
-
-    for file in os.listdir(folder):
+    files = os.listdir(folder)
+    #files.sort(reverse=True)
+    files.sort()
+    
+    for file in files:
         f = os.path.join(folder, file)
         if os.path.isfile(f) and f.endswith('.xlsx'):
             df = pd.read_excel(f)
