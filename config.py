@@ -20,24 +20,7 @@ spacy_model_name = "en_core_web_lg"
 # train_dataset = 'datasets/Validated_Train.txt'
 # test_dataset = 'datasets/Validated_Test.txt'
 # bert_model = "SZTAKI-HLT/hubert-base-cc"
-# spacy_model_name = "hu_core_news_lg"                             # FROM: ["hu_core_news_lg", "hu_core_news_trf", "en_core_web_lg"]
-
-
-# # checkpoint = 'state_dict/ENG_bert_spc_validated_val_acc_0.7159'
-# # checkpoint = 'state_dict/bert_spc_validated_val_acc_0.4659'        # ENG!
-# # checkpoint = 'state_dict/HUN_bert_spc_validated_val_acc_0.7159'
-# # checkpoint = 'state_dict/bert_spc_validated_val_acc_0.6932'      # HUN!
-
-
-# train_dataset = 'datasets/train_english.txt'
-# test_dataset = 'datasets/test_english.txt'
-# # train_dataset = 'datasets/Validated_Train.txt'
-# # test_dataset = 'datasets/Validated_Test.txt'
-
-# bert_model = "bert-base-cased"
-# # bert_model = "SZTAKI-HLT/hubert-base-cc"            
-
-# spacy_model_name = "en_core_web_lg"                 
+# spacy_model_name = "hu_core_news_lg"                             # FROM: ["hu_core_news_lg", "hu_core_news_trf", "en_core_web_lg"]             
 
 prediction_results_folder = "results/"
 
