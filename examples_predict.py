@@ -44,7 +44,7 @@ def more_files():
             df = pd.read_excel(f)
             print(f'File read for preprocess: {file}')
 
-            preparator = DataPreparator(dataframe=df)
+            preparator = DataPreparator(dataframe=df, huspacy_model_name='en_core_web_lg')
             data_dict = preparator.start()
             print('Dictionary format from preprocess created')
 
@@ -65,27 +65,6 @@ def more_files():
 
             result_frame.to_excel(result_path)
             print("Predictions written into file")
-
-    # for part in range(14):
-    #     file = f"../datasets/parl_speech_7_segmented_part_{part}.xlsx"
-    #     df = pd.read_excel(file)
-    #
-    #     preparator = DataPreparator(dataframe=df)
-    #     data_dict = preparator.start()
-    #
-    #     predictor = Predictor(state_dict=config.checkpoint)
-    #     predictions = []
-    #     print("Generating predictions...")
-    #
-    #     for sent, aspect in tqdm(zip(data_dict[config.text_column], data_dict[config.NE_column])):
-    #         prediction = predictor.predict(text=sent, named_entity=aspect)
-    #         predictions.extend(prediction)
-    #
-    #     data_dict[config.predictions_column] = predictions
-    #     result_frame = pd.DataFrame.from_dict(data_dict)
-    #     filename = file.split("/")[-1]
-    #     result_path = os.path.join(config.prediction_results_folder, filename.replace('.xlsx', '_predictions.xlsx'))
-    #     result_frame.to_excel(result_path)
 
 
 if __name__ == '__main__':

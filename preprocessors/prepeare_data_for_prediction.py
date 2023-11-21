@@ -4,6 +4,7 @@ import sys
 from typing import List, Tuple, Dict
 from tqdm import tqdm
 import spacy
+import torch
 
 
 class DataPreparator(object):
@@ -37,16 +38,22 @@ class DataPreparator(object):
         }
 
         ##################
-        spacy.prefer_gpu()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if device.type == 'cuda':
+            spacy.prefer_gpu()
         ##################
         
         try:
             if self.model_name == "hu_core_news_lg":
-                import hu_core_news_lg
+                # import hu_core_news_lg
                 self.nlp = spacy.load("hu_core_news_lg")
             if self.model_name == "hu_core_news_trf":
-                import hu_core_news_trf
+                # import hu_core_news_trf
                 self.nlp = spacy.load("hu_core_news_trf")
+            if self.model_name == "en_core_web_lg":
+                self.nlp = spacy.load("en_core_web_lg")
+            else:
+                sys.exit(f"Defined spaCy model not accepted: {self.model_name}")
         except (OSError, IOError) as e:
             print(f"Error! Language model not installed. You can install it by 'pip install {self.PATHS[self.model_name]}'")
             sys.exit(e)
