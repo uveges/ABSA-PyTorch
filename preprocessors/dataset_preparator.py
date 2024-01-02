@@ -59,6 +59,9 @@ def create_traning_file(result_path: str, dataset: pd.DataFrame) -> None:
 class DatasetPreparator(object):
 
     def __init__(self, dataset_path: str, result_file_name: str = "Dataset", test_size: float = 0.2):
+        """
+        dataset_path: .txt file, where a masked sentence, aspect (str), label (int) convention is followed.
+        """
         self.dataset_path = dataset_path
         self.result_file_name = result_file_name
         self.test_size = test_size
@@ -101,6 +104,8 @@ if __name__ == '__main__':
     #
     # create_short_test_data(data_file=combined_temporary,
     #                        test_examples_amount=500)
+
+
 
     short_test_file = "../datasets/HunEmPoli_8_ner_valid_txt_RECODED.txt"
 

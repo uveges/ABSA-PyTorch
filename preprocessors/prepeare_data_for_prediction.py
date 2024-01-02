@@ -45,10 +45,8 @@ class DataPreparator(object):
         
         try:
             if self.model_name == "hu_core_news_lg":
-                # import hu_core_news_lg
                 self.nlp = spacy.load("hu_core_news_lg")
             if self.model_name == "hu_core_news_trf":
-                # import hu_core_news_trf
                 self.nlp = spacy.load("hu_core_news_trf")
             if self.model_name == "en_core_web_lg":
                 self.nlp = spacy.load("en_core_web_lg")
