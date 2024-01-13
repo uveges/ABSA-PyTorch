@@ -45,8 +45,10 @@ class DataPreparator(object):
         
         try:
             if self.model_name == "hu_core_news_lg":
+                # import hu_core_news_lg
                 self.nlp = spacy.load("hu_core_news_lg")
             if self.model_name == "hu_core_news_trf":
+                # import hu_core_news_trf
                 self.nlp = spacy.load("hu_core_news_trf")
             if self.model_name == "en_core_web_lg":
                 self.nlp = spacy.load("en_core_web_lg")
@@ -73,6 +75,8 @@ class DataPreparator(object):
             self.original_data_list_per_column[c] = self.dataframe[c].values.tolist()
         print("Preprocess data...")
         for i, t in tqdm(enumerate(self.original_data_list_per_column[config.text_column])):
+            if not isinstance(t, str):
+                continue
             sents, aspects, ent_types = self.__preprocess_with_spacy(t)
             repetitions = len(sents)
             for column in self.column_names:
