@@ -33,7 +33,7 @@ def simplest_case_usage():
 
 def more_files():
 
-    folder = 'resources'
+    folder = 'resources_CZ'
     files = os.listdir(folder)
     #files.sort(reverse=True)
     files.sort()
