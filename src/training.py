@@ -14,6 +14,7 @@ import torch.nn as nn
 from sklearn import metrics
 from torch.utils.data import DataLoader, random_split
 from transformers import BertModel, AutoModel, BertForSequenceClassification
+from huggingface_hub import login, HfApi, create_repo
 
 import config
 from data_utils import Tokenizer4Bert, ABSADataset
@@ -88,6 +89,7 @@ class Instructor:
     def __init__(self, opt, bert_model_name: str, train_dataset_path, test_dataset_path):
         self.opt = opt
 
+        self.bert_model_name = bert_model_name
         tokenizer = Tokenizer4Bert(opt.max_seq_len, bert_model_name)
         bert = AutoModel.from_pretrained(bert_model_name)
         self.model = opt.model_class(bert, opt).to(opt.device)
@@ -226,6 +228,29 @@ class Instructor:
         
         return state_dict_modified
 
+    def hf_upload_folder_with_retry(self, api, file, model_name_hf, msg):
+        max_retries = 3
+        retries = 0
+    
+        while retries < max_retries:
+            try:
+                api.upload_folder(
+                    folder_path=file,
+                    repo_id=model_name_hf, 
+                    commit_message=msg,
+                    ignore_patterns=['tmp/*', 'tmp/', '/tmp/']
+                )
+                logger.info("Upload successful.")
+                break  # Exit the loop if upload is successful
+            except Exception as e:
+                print(f"Error: {e}")
+                retries += 1
+                if retries < max_retries:
+                    logger.info(f"Retrying after a while (Attempt {retries}/{max_retries})...")
+                    time.sleep(5) 
+                else:
+                    logger.info(f"Max retries reached. Upload failed.")
+
     def run(self):
         criterion = nn.CrossEntropyLoss()
         _params = filter(lambda p: p.requires_grad, self.model.parameters())
@@ -245,7 +270,17 @@ class Instructor:
 
         # HF Transformers compatibility:
         state_dict_modified = self.modify_state_dict(state_dict)
-        model = BertForSequenceClassification.from_pretrained(bert_model, num_labels=3, state_dict=state_dict_modified)
-        repo_id = f"poltextlab/{best_model_path.split('/')[-1]}"
-        logger.info(f"Saving converted model to model directory: {best_model_path}\nCreating HuggingFace repository: {repo_id}")
-        model.save_pretrained(best_model_path, push_to_hub=True, repo_name=repo_id)
+        model = BertForSequenceClassification.from_pretrained(self.bert_model_name, num_labels=3, state_dict=state_dict_modified)
+        best_model_path = best_model_path.replace(".", "_")
+        repo_id = f"poltextlab/absa_{best_model_path.split('/')[-1]}"
+        logger.info(f"Saving converted model to model directory: {best_model_path}")
+        model.save_pretrained(best_model_path)
+        logger.info(f"Creating HuggingFace repository: {repo_id}")
+        api = HfApi()
+        msg = "Automatic upload after model fine-tuning"
+        try:
+            create_repo(repo_id, private=True)
+        except:
+            logger.info("You're overwriting an already existing model repo.")
+        self.hf_upload_folder_with_retry(api, best_model_path, repo_id, msg)
+        
