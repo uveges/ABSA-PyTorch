@@ -243,7 +243,7 @@ class Instructor:
         logger.info('>> test_acc: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_f1))
 
         # HF Transformers compatibility:
-        state_dict_modified = modify_state_dict(state_dict)
+        state_dict_modified = self.modify_state_dict(state_dict)
         model = BertForSequenceClassification.from_pretrained(bert_model, num_labels=3, state_dict=state_dict_modified)
         repo_id = f"poltextlab/{best_model_path.split('/')[-1]}"
         logger.info(f"Saving converted model to model directory: {best_model_path}\nCreating HuggingFace repository: {repo_id}")
