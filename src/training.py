@@ -245,5 +245,6 @@ class Instructor:
         # HF Transformers compatibility:
         state_dict_modified = modify_state_dict(state_dict)
         model = BertForSequenceClassification.from_pretrained(bert_model, num_labels=3, state_dict=state_dict_modified)
-        logger.info(f"Saving converted model to model directory: {best_model_path}")
-        model.save_pretrained(best_model_path)
+        repo_id = f"poltextlab/{best_model_path.split('/')[-1]}"
+        logger.info(f"Saving converted model to model directory: {best_model_path}\nCreating HuggingFace repository: {repo_id}")
+        model.save_pretrained(best_model_path, push_to_hub=True, repo_name=repo_id)
