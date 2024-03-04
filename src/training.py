@@ -5,13 +5,14 @@ import random
 import sys
 from argparse import Namespace
 from time import strftime, localtime
+from collections import OrderedDict
 
 import numpy
 import torch
 import torch.nn as nn
 from sklearn import metrics
 from torch.utils.data import DataLoader, random_split
-from transformers import BertModel, AutoModel
+from transformers import BertModel, AutoModel, BertForSequenceClassification
 
 import config
 from data_utils import Tokenizer4Bert, ABSADataset
@@ -204,6 +205,26 @@ class Instructor:
         print(classification_report)
         return acc, f1
 
+    def modify_state_dict(self, state_dict):
+        state_dict_modified = OrderedDict()
+        renamed = dict()
+        logger.info("Converting model to safetensors")
+        logger.info("Renaming the following keys in state_dict:")
+        
+        for key, value in tqdm(state_dict.items()):
+            if key.startswith("dense"):
+                subst = "classifier"
+                key_new = f'{subst}.{key.split(".")[-1]}'
+                renamed[key] = key_new
+            else:
+                key_new = key
+            state_dict_modified[key_new] = state_dict[key]
+    
+        for key, value in renamed.items():
+            logger.info(f"- {key} -> {value}")
+        
+        return state_dict_modified
+
     def run(self):
         criterion = nn.CrossEntropyLoss()
         _params = filter(lambda p: p.requires_grad, self.model.parameters())
@@ -216,6 +237,13 @@ class Instructor:
         self._reset_params()
         best_model_path = self._train(criterion, optimizer, train_data_loader, val_data_loader)
         print(f"Best: {best_model_path}")
-        self.model.load_state_dict(torch.load(best_model_path))
+        state_dict = torch.load(best_model_path)
+        self.model.load_state_dict(state_dict)
         test_acc, test_f1 = self._evaluate_acc_f1(test_data_loader)
         logger.info('>> test_acc: {:.4f}, test_f1: {:.4f}'.format(test_acc, test_f1))
+
+        # HF Transformers compatibility:
+        state_dict_modified = modify_state_dict(state_dict)
+        model = BertForSequenceClassification.from_pretrained(bert_model, num_labels=3, state_dict=state_dict_modified)
+        logger.info(f"Saving converted model to model directory: {best_model_path}")
+        model.save_pretrained(best_model_path)
