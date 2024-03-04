@@ -6,6 +6,7 @@ import sys
 from argparse import Namespace
 from time import strftime, localtime
 from collections import OrderedDict
+from tqdm import tqdm
 
 import numpy
 import torch
