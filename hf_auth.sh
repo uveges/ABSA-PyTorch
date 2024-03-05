@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define your Hugging Face token
-MY_HUGGINGFACE_TOKEN="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"
+MY_HUGGINGFACE_TOKEN=""
 
 # Install huggingface_hub
 pip install huggingface_hub
